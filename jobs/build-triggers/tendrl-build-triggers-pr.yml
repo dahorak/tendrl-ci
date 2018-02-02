@@ -1,0 +1,245 @@
+---
+- job-template:
+    name: "tendrl-build-1-pr-{package_name}"
+    display-name: 'Tendrl build: ({project_name}) - {package_name}'
+    description: |
+      <b>Job building Tendrl package '{package_name}' from PR
+      and pushing it to '{target_repo}' repo.</b><br>
+      Maintainer: <a href="mailto:dahorak@redhat.com">Daniel Horak</a><br>
+      Team Contact: <a href="mailto:tendrl-devel@redhat.com">tendrl-devel</a><br><br>
+      JJB Code Location: <a href="https://github.com/Tendrl/tendrl-ci/tree/master/jobs">tendrl-ci</a><br>
+      Managed by Jenkins Job Builder. Do not edit via web.<br>
+    project-type: freestyle
+    copr_config: '~/.config/copr'
+    package_prefix: "tendrl-"
+    defaults: global
+    disabled: false
+    concurrent: false
+    quiet-period: 0
+    block-downstream: false
+    block-upstream: false
+    node: 'tendrl-ci-slave01'
+    triggers: "{obj:triggers}"
+    scm: "{obj:scm}"
+    properties:
+      - github:
+          url: 'https://github.com/Tendrl/{package_name}/'
+    wrappers:
+      - timeout:
+          timeout: 60
+          abort: true
+          type: absolute
+    parameters:
+      - string:
+          name: TARGET_REPO
+          default: "{target_repo}"
+          description: "Target copr repo name."
+      #- string:
+      #    name: sha1
+      #    default: "master"
+      #    description: ""
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          #echo "=============================================================="
+          #env | grep -iv password
+          #echo "=============================================================="
+          echo "GIT_COMMIT: ${{GIT_COMMIT}}"
+          echo "GIT_BRANCH: ${{GIT_BRANCH}}"
+          echo "TARGET_REPO: ${{TARGET_REPO}}"
+          # prepare unique identifier for this build (BUILD_HASH)
+          export BUILD_HASH=$(mktemp -du "build-{target_repo}-{package_prefix}{package_name}.XXXXXXXXXX")
+          echo "BUILD_HASH=${{BUILD_HASH}}" > ${{WORKSPACE}}/env.sh
+          # "reserve" build server for this job
+          echo "${{BUILD_HASH}}" >> ${{HOME}}/build_server_{project_name}_used_by
+
+          # prepare building server (if not already reserved)
+      - conditional-step:
+          condition-kind: shell
+          condition-command: "(( $(grep -v '^ *$' $HOME/build_server_{project_name}_status | wc -l) == 0))"
+          on-evaluation-failure: dont-run
+          steps:
+            - trigger-builds:
+                - project: 'tendrl-build-X-build_server-{project_name}-prepare'
+                  block: true
+                  property-file: env.sh
+
+      - shell: |
+          #!/bin/bash -xe
+          # load environment file with BUILD_HASH
+          source ${{WORKSPACE}}/env.sh
+          echo "GIT_COMMIT: ${{GIT_COMMIT}}"
+          echo "GIT_BRANCH: ${{GIT_BRANCH}}"
+          # parse PR# and head/merge variant
+          if [[ "${{ghprbPullId}}" ]]; then
+            PR_NUMBER=${{ghprbPullId}}
+            PR_VARIANT="merge"
+          else
+            PR_NUMBER=$(echo $GIT_BRANCH | awk -F / '{{ print $3 }}')
+            PR_VARIANT=$(echo $GIT_BRANCH | awk -F / '{{ print $4 }}')
+          fi
+          echo "PR_NUMBER: ${{PR_NUMBER}}"
+          echo "PR_VARIANT: ${{PR_VARIANT}}"
+          echo "ghprbPullId: ${{ghprbPullId}}"
+
+          # wait for build_server to be ready
+          until grep -q "READY" ${{HOME}}/build_server_{project_name}_status; do
+            sleep 10
+          done
+
+          # remote working directory
+          rwd="/tmp/${{BUILD_HASH}}"
+          # get build server hostname
+          build_server=$(grep -A1 '\[build_server\]' ${{HOME}}/build_server_{project_name}.hosts | tail -1)
+          # check if build_server is available.
+          ssh root@${{build_server}} "hostname"
+          # prepare remote working directory
+          ssh root@${{build_server}} "mkdir ${{rwd}}"
+
+          # clone git repository with source code
+          ssh root@${{build_server}} \
+            "git clone https://github.com/Tendrl/{package_name} ${{rwd}}/{package_name}"
+          # fetch and checkout the PR branch
+          branch="pr${{PR_NUMBER}}.${{PR_VARIANT}}"
+          ssh root@${{build_server}} \
+            "cd ${{rwd}}/{package_name}; \
+            git fetch origin refs/pull/${{PR_NUMBER}}/${{PR_VARIANT}}:${{branch}}; \
+            git checkout ${{branch}}; \
+            git status;"
+
+          # build srpm package
+          # FIXME: we should unify the usage of target update-release or gitversion
+          ssh root@${{build_server}} \
+            "cd ${{rwd}}/{package_name}; \
+            make update-release ;\
+            make gitversion ;\
+            sed -i \"s/\(^Release:.*\)/\1.${{branch}}/\" {package_prefix}{package_name}.spec ;\
+            make srpm ;\
+            ls -l;"
+
+          # prepare copr configuration
+          scp {copr_config} root@${{build_server}}:${{rwd}}/copr.conf
+
+          # build package in copr
+          ssh root@${{build_server}} \
+          "copr-cli --config ${{rwd}}/copr.conf build ${{TARGET_REPO}} \
+            ${{rwd}}/{package_name}/{package_prefix}{package_name}*.src.rpm 2>&1 | tee ${{rwd}}/copr-build.log"
+
+          # check status of copr build
+          ssh root@${{build_server}} "cat ${{rwd}}/copr-build.log" | \
+            grep 'Build .*: succeeded' || exit 1
+
+
+          # Copr build ID
+          COPR_BUILD_ID=$(ssh root@${{build_server}} "grep 'Created builds:' ${{rwd}}/copr-build.log | \
+            sed 's/Created builds: //'")
+          echo "COPR_BUILD_ID: ${{COPR_BUILD_ID}}"
+
+          # download the packages
+          ssh root@${{build_server}} \
+          "copr-cli --config ${{rwd}}/copr.conf download-build \
+            --dest ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}} \
+            ${{COPR_BUILD_ID}}"
+
+          # cleanup the repo
+          ssh root@${{build_server}} \
+            "find ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}} \
+            -type f ! -iname '*.rpm' -delete"
+
+          # prepare rpm repo
+          ssh root@${{build_server}} \
+            "createrepo ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}}/"
+
+          # prepare repofile
+          repo_file="${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}}/{package_prefix}{package_name}-${{branch}}.repo"
+          ssh root@${{build_server}} \
+            "echo '[{package_prefix}{package_name}-${{branch}}]' > ${{repo_file}} ;\
+            echo 'name={package_prefix}{package_name}-${{branch}}' >> ${{repo_file}} ;\
+            echo 'baseurl=http://artifacts.ci.centos.org/tendrl/pr/{package_prefix}{package_name}/${{branch}}/' >> ${{repo_file}} ;\
+            echo 'skip_if_unavailable=True' >> ${{repo_file}} ;\
+            echo 'gpgcheck=1' >> ${{repo_file}} ;\
+            echo 'gpgkey=https://copr-be.cloud.fedoraproject.org/results/tendrl/${{TARGET_REPO}}/pubkey.gpg' >> ${{repo_file}} ;\
+            echo 'repo_gpgcheck=0' >> ${{repo_file}} ;\
+            echo 'enabled=1' >> ${{repo_file}} ;\
+            echo '' >> ${{repo_file}};"
+
+          # upload generated repo to artifacts.ci.centos.org
+          set +x
+          key=$(cat ~/duffy.key)
+          ssh root@${{build_server}} \
+            "RSYNC_PASSWORD=${{key:0:13}} rsync -av \
+            ${{rwd}}/rpms/pr/ \
+            tendrl@artifacts.ci.centos.org::tendrl/pr/"
+          # cleanup older packages for the particular PR
+          ssh root@${{build_server}} \
+            "RSYNC_PASSWORD=${{key:0:13}} rsync -av --delete \
+            ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}}/ \
+            tendrl@artifacts.ci.centos.org::tendrl/pr/{package_prefix}{package_name}/${{branch}}/"
+          set +x
+
+          echo
+          echo "##############################################################"
+          echo "REPO: http://artifacts.ci.centos.org/tendrl/pr/{package_prefix}{package_name}/${{branch}}/{package_prefix}{package_name}-${{branch}}.repo"
+          echo "##############################################################"
+          echo
+
+    publishers:
+      - trigger-parameterized-builds:
+          - project: 'tendrl-build-X-build_server-{project_name}-teardown'
+            property-file: env.sh
+            condition: ALWAYS
+
+      - email:
+          recipients: dahorak@redhat.com
+            
+
+- project:
+    name: 'PR'
+    project_name: 'PR'
+    target_repo: 'Features'
+    copr_config: '~/.copr-tendrl.conf'
+    copr_user: 'tendrl'
+    run_package_validation: true
+    triggers:
+      - github-pull-request:
+            admin-list:
+              - dahorak
+              - nthomas-redhat
+              - r0h4n
+              - TimothyAsir
+              - TimothyAsirJeyasing
+            org-list:
+              - Tendrl
+            allow-whitelist-orgs-as-admins: true
+            #cron: 'H * * * *'
+            trigger-phrase: '.*(re)?run test.*'
+            skip-build-phrase: 'no tests'
+            github-hooks: true
+            cancel-builds-on-update: true
+            #auth-id: 'centos-ci'
+    scm:
+      - git:
+          url: 'https://github.com/Tendrl/{package_name}'
+          #refspec: "+refs/pull/*:refs/remotes/origin/pr/*"
+          refspec: "+refs/pull/${{ghprbPullId}}/*:refs/remotes/origin/pr/${{ghprbPullId}}/*"
+          #branches:
+          #  - "${{ghprbActualCommit}}"
+          basedir: tendrl-{package_name}
+          skip-tag: true
+          wipe-workspace: true
+    jobs:
+      - "tendrl-build-1-pr-{package_name}"
+      - "tendrl-build-X-build_server-{project_name}-prepare"
+      - "tendrl-build-X-build_server-{project_name}-teardown"
+    package_name:
+      - api
+      - commons
+      - gluster-integration
+      - monitoring-integration
+      - node-agent
+      - notifier
+      - tendrl-ansible:
+          package_prefix: ""
+      - tendrl-selinux:
+          package_prefix: ""
+      - ui
