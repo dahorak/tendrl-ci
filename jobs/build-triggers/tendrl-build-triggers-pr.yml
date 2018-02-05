@@ -191,6 +191,7 @@
 
       - email:
           recipients: dahorak@redhat.com
+          send-to-individuals: true
             
 
 - project:
