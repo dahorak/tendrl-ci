@@ -102,7 +102,8 @@
           # fetch and checkout the PR branch
           branch="pr${{PR_NUMBER}}.${{PR_VARIANT}}"
           ssh root@${{build_server}} \
-            "cd ${{rwd}}/{package_name}; \
+            "set -xe; \
+            cd ${{rwd}}/{package_name}; \
             git fetch origin refs/pull/${{PR_NUMBER}}/${{PR_VARIANT}}:${{branch}}; \
             git checkout ${{branch}}; \
             git status;"
@@ -110,7 +111,8 @@
           # build srpm package
           # FIXME: we should unify the usage of target update-release or gitversion
           ssh root@${{build_server}} \
-            "cd ${{rwd}}/{package_name}; \
+            "set -xe; \
+            cd ${{rwd}}/{package_name}; \
             make update-release ;\
             make gitversion ;\
             sed -i \"s/\(^Release:.*\)/\1.${{branch}}/\" {package_prefix}{package_name}.spec ;\
