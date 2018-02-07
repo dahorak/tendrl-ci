@@ -100,7 +100,7 @@
           ssh root@${{build_server}} \
             "git clone https://github.com/Tendrl/{package_name} ${{rwd}}/{package_name}"
           # fetch and checkout the PR branch
-          branch="pr${{PR_NUMBER}}.${{PR_VARIANT}}"
+          branch="pr${{PR_NUMBER}}"
           ssh root@${{build_server}} \
             "set -xe; \
             cd ${{rwd}}/{package_name}; \
