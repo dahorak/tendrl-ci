@@ -207,7 +207,6 @@
     target_repo: 'Features'
     copr_config: '~/.copr-tendrl.conf'
     copr_user: 'tendrl'
-    run_package_validation: true
     triggers:
       - github-pull-request:
           admin-list:
@@ -219,9 +218,8 @@
           org-list:
             - Tendrl
           allow-whitelist-orgs-as-admins: true
-          #cron: 'H * * * *'
-          trigger-phrase: '.*(re)?run test.*'
-          skip-build-phrase: 'no tests'
+          trigger-phrase: '.*run build.*'
+          skip-build-phrase: 'no build'
           github-hooks: true
           cancel-builds-on-update: true
           status-context: 'CentOS CI'
