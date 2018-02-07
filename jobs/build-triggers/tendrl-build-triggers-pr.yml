@@ -222,7 +222,7 @@
           skip-build-phrase: 'no build'
           github-hooks: true
           cancel-builds-on-update: true
-          status-context: 'CentOS CI'
+          status-context: 'CentOS CI - package build'
           status-add-test-results: false
           #auth-id: 'centos-ci'
     scm:
