@@ -149,6 +149,9 @@
           ssh root@${{build_server}} \
             "find ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}} \
             -type f ! -iname '*.rpm' -delete"
+          ssh root@${{build_server}} \
+            "find ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}} \
+            -type f -iname '*.src.rpm' -delete"
 
           # prepare rpm repo
           ssh root@${{build_server}} \
