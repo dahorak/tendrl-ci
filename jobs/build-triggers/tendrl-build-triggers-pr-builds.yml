@@ -34,16 +34,8 @@
           name: TARGET_REPO
           default: "{target_repo}"
           description: "Target copr repo name."
-      #- string:
-      #    name: sha1
-      #    default: "master"
-      #    description: ""
     builders:
       - shell: |
-          #!/bin/bash -xe
-          #echo "=============================================================="
-          #env | grep -iv password
-          #echo "=============================================================="
           echo "GIT_COMMIT: ${{GIT_COMMIT}}"
           echo "GIT_BRANCH: ${{GIT_BRANCH}}"
           echo "TARGET_REPO: ${{TARGET_REPO}}"
@@ -224,14 +216,10 @@
           cancel-builds-on-update: true
           status-context: 'CentOS CI - package build'
           status-add-test-results: false
-          #auth-id: 'centos-ci'
     scm:
       - git:
           url: 'https://github.com/Tendrl/{package_name}'
-          #refspec: "+refs/pull/*:refs/remotes/origin/pr/*"
           refspec: "+refs/pull/${{ghprbPullId}}/*:refs/remotes/origin/pr/${{ghprbPullId}}/*"
-          #branches:
-          #  - "${{ghprbActualCommit}}"
           basedir: tendrl-{package_name}
           skip-tag: true
           wipe-workspace: true
