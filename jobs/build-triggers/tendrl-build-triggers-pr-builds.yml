@@ -202,9 +202,27 @@
     triggers:
       - github-pull-request:
           admin-list:
+            - a2batic
+            - cloudbehl
             - dahorak
+            - fbalak
+            - gnehapk
+            - GowthamShanmugam
+            - julienlim
+            - ktdreyer
+            - ltrilety
+            - mbukatov
+            - mcarrano
+            - nnDarshan
             - nthomas-redhat
             - r0h4n
+            - rishubhjain
+            - sankarshanmukhopadhyay
+            - scuttlemonkey
+            - shirshendu
+            - shtripat
+            - sidhax
+            - tigert
             - TimothyAsir
             - TimothyAsirJeyasing
           org-list:
