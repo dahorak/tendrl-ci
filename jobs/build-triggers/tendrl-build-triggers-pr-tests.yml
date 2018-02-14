@@ -151,6 +151,8 @@
       - git:
           url: 'https://github.com/Tendrl/{package_name}'
           refspec: "+refs/pull/${{ghprbPullId}}/*:refs/remotes/origin/pr/${{ghprbPullId}}/*"
+          branches:
+            - "origin/pr/**"
           basedir: tendrl-{package_name}
           skip-tag: true
           wipe-workspace: true
