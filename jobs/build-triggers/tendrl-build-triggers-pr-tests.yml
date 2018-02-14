@@ -114,9 +114,32 @@
       - github-pull-request:
           admin-list:
             - dahorak
+          white-list:
+            - a2batic
+            - cloudbehl
+            - fbalak
+            - gnehapk
+            - GowthamShanmugam
+            - julienlim
+            - ktdreyer
+            - ltrilety
+            - mbukatov
+            - mcarrano
+            - nnDarshan
+            - nthomas-redhat
+            - r0h4n
+            - rishubhjain
+            - sankarshanmukhopadhyay
+            - scuttlemonkey
+            - shirshendu
+            - shtripat
+            - sidhax
+            - tigert
+            - TimothyAsir
+            - TimothyAsirJeyasing
           org-list:
             - Tendrl
-          allow-whitelist-orgs-as-admins: true
+          allow-whitelist-orgs-as-admins: false
           trigger-phrase: '.*run test.*'
           only-trigger-phrase: true
           skip-build-phrase: 'no test'
