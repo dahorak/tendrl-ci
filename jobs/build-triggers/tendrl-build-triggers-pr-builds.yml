@@ -110,6 +110,7 @@
             make gitversion ;\
             set -e ;\
             sed -i \"s/\(^Release:.*\)/\1.${{branch}}/\" {package_prefix}{package_name}.spec ;\
+            sed -i \"s/\(^Release: *\)/\199/\" {package_prefix}{package_name}.spec ;\
             make srpm ;\
             ls -l;"
 
