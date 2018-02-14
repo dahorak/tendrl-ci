@@ -81,10 +81,6 @@
             echo
           fi
 
-          echo "Run whole test suite."
-          echo "##############################################################"
-          echo
-
           # Prepare env.sh file
           echo > ${{WORKSPACE}}/env.sh
           # use cop tendrl/tendrl (master) repo
@@ -97,7 +93,12 @@
           echo "ADDITIONAL_REPOS_USM_SERVER=${{ADDITIONAL_REPOS_USM_SERVER}}" >> ${{WORKSPACE}}/env.sh
           echo "ADDITIONAL_REPOS_USM_NODES=${{ADDITIONAL_REPOS_USM_NODES}}" >> ${{WORKSPACE}}/env.sh
           echo "ADDITIONAL_REPOS_USM_CLIENT=${{ADDITIONAL_REPOS_USM_CLIENT}}" >> ${{WORKSPACE}}/env.sh
+          set +x
 
+          echo
+          echo "##############################################################"
+          echo "Run whole test suite."
+          echo
       - trigger-builds:
         - project: "tendrl-2-cluster-gluster"
           property-file: env.sh
