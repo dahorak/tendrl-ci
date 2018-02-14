@@ -203,9 +203,10 @@
     triggers:
       - github-pull-request:
           admin-list:
+            - dahorak
+          white-list:
             - a2batic
             - cloudbehl
-            - dahorak
             - fbalak
             - gnehapk
             - GowthamShanmugam
@@ -228,7 +229,7 @@
             - TimothyAsirJeyasing
           org-list:
             - Tendrl
-          allow-whitelist-orgs-as-admins: true
+          allow-whitelist-orgs-as-admins: false
           trigger-phrase: '.*run build.*'
           skip-build-phrase: 'no build'
           github-hooks: true
