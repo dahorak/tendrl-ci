@@ -91,12 +91,18 @@
           # clone git repository with source code
           ssh root@${{build_server}} \
             "git clone https://github.com/Tendrl/{package_name} ${{rwd}}/{package_name}"
+
+          # prepare refs, use master if it is for closed PR
+          refs="refs/pull/${{PR_NUMBER}}/${{PR_VARIANT}}"
+          if [[ "${{ghprbActualCommitAuthorEmail}}" == "noreply@github.com" ]]; then
+            refs="master"
+          fi
           # fetch and checkout the PR branch
           branch="pr${{PR_NUMBER}}"
           ssh root@${{build_server}} \
             "set -xe; \
             cd ${{rwd}}/{package_name}; \
-            git fetch origin refs/pull/${{PR_NUMBER}}/${{PR_VARIANT}}:${{branch}}; \
+            git fetch origin ${{refs}}:${{branch}}; \
             git checkout ${{branch}}; \
             git status;"
 
