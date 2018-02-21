@@ -114,29 +114,25 @@
             make srpm ;\
             ls -l;"
 
-          # prepare copr configuration
-          scp {copr_config} root@${{build_server}}:${{rwd}}/copr.conf
-
-          # build package in copr
+          # prepare mock configuration
+          mock_root="/var/lib/mock/epel-7-x86_64-${{BUILD_HASH}}"
+          mock_cfg="${{rwd}}/mock-epel-7-x86_64.cfg"
           ssh root@${{build_server}} \
-          "copr-cli --config ${{rwd}}/copr.conf build ${{TARGET_REPO}} \
-            ${{rwd}}/{package_name}/{package_prefix}{package_name}*.src.rpm 2>&1 | tee ${{rwd}}/copr-build.log"
+            "set -xe; \
+            cp /etc/mock/epel-7-x86_64.cfg ${{mock_cfg}}; \
+            sed -i 's/epel-7-x86_64/epel-7-x86_64-${{BUILD_HASH}}/' ${{mock_cfg}}"
 
-          # check status of copr build
-          ssh root@${{build_server}} "cat ${{rwd}}/copr-build.log" | \
-            grep 'Build .*: succeeded' || exit 1
-
-
-          # Copr build ID
-          COPR_BUILD_ID=$(ssh root@${{build_server}} "grep 'Created builds:' ${{rwd}}/copr-build.log | \
-            sed 's/Created builds: //'")
-          echo "COPR_BUILD_ID: ${{COPR_BUILD_ID}}"
-
-          # download the packages
+          # build RPM packages using mock
           ssh root@${{build_server}} \
-          "copr-cli --config ${{rwd}}/copr.conf download-build \
-            --dest ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}} \
-            ${{COPR_BUILD_ID}}"
+            "set -xe; \
+            mock -r ${{mock_cfg}} rebuild \
+              ${{rwd}}/{package_name}/{package_prefix}{package_name}*.src.rpm"
+
+          # prepare RPM repo
+          ssh root@${{build_server}} \
+            "set -xe; \
+            mkdir -p ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}}; \
+            cp ${{mock_root}}/result/*.rpm ${{rwd}}/rpms/pr/{package_prefix}{package_name}/${{branch}};"
 
           # cleanup the repo
           ssh root@${{build_server}} \
