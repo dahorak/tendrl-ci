@@ -100,14 +100,14 @@
           echo "Run whole test suite."
           echo
       - trigger-builds:
-        - project: "tendrl-2-cluster-gluster"
-          property-file: env.sh
-          block: true
+          - project: "tendrl-2-cluster-gluster"
+            property-file: env.sh
+            block: true
 
     publishers:
       - email:
           recipients: dahorak@redhat.com
-            
+
 
 - project:
     name: 'Test_suite'
