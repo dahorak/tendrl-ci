@@ -107,14 +107,10 @@
             git status;"
 
           # build srpm package
-          # FIXME: we should unify the usage of target update-release or gitversion
           ssh root@${{build_server}} \
             "set -xe; \
             cd ${{rwd}}/{package_name}; \
-            set +e ;\
-            make update-release ;\
             make gitversion ;\
-            set -e ;\
             sed -i \"s/\(^Release:.*\)/\1.${{branch}}/\" {package_prefix}{package_name}.spec ;\
             sed -i \"s/\(^Release: *\)/\199/\" {package_prefix}{package_name}.spec ;\
             make srpm ;\
