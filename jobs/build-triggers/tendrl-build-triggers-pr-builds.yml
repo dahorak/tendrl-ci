@@ -190,7 +190,7 @@
       - email:
           recipients: dahorak@redhat.com sds-mgmt-dev@redhat.com
           send-to-individuals: false
-            
+
 
 - project:
     name: 'PR'
