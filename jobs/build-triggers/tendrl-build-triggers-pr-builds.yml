@@ -177,7 +177,7 @@
             echo 'name={package_prefix}{package_name}-${{branch}}' >> ${{repo_file}} ;\
             echo 'baseurl=http://artifacts.ci.centos.org/tendrl/pr/{package_prefix}{package_name}/${{branch}}/' >> ${{repo_file}} ;\
             echo 'skip_if_unavailable=True' >> ${{repo_file}} ;\
-            echo 'gpgcheck=1' >> ${{repo_file}} ;\
+            echo 'gpgcheck=0' >> ${{repo_file}} ;\
             echo 'gpgkey=https://copr-be.cloud.fedoraproject.org/results/tendrl/${{TARGET_REPO}}/pubkey.gpg' >> ${{repo_file}} ;\
             echo 'repo_gpgcheck=0' >> ${{repo_file}} ;\
             echo 'enabled=1' >> ${{repo_file}} ;\
