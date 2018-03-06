@@ -104,6 +104,7 @@
             cd ${{rwd}}/{package_name}; \
             git fetch origin ${{refs}}:${{branch}}; \
             git checkout ${{branch}}; \
+            git log -5; \
             git status;"
 
           # build srpm package
