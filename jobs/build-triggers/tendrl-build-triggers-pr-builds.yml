@@ -107,6 +107,26 @@
             git log -5; \
             git status;"
 
+          # prepare git hash based release string
+          # - for not merged PR, it will contain two hashes for both
+          #   parents of the temporary merge to master commit
+          # - for merged PR, it will contain only the hash of the merge commit
+          #   (or last commit from master)
+          git_commit_and_parrents=$(ssh root@${{build_server}} \
+            "set -xe; \
+            cd ${{rwd}}/{package_name}; \
+            git rev-list --parents -n 1 HEAD")
+          git_last_commit=$(echo "${{git_commit_and_parrents}}" | awk '{{ print $1 }}' | cut -c1-7 )
+          if [[ "${{ghprbActualCommitAuthorEmail}}" == "noreply@github.com" ]]; then
+            git_hash_release_string="${{git_last_commit}}"
+          else
+            git_parrent_a=$(echo "${{git_commit_and_parrents}}" | awk '{{ print $2 }}' | cut -c1-7 )
+            git_parrent_b=$(echo "${{git_commit_and_parrents}}" | awk '{{ print $3 }}' | cut -c1-7 )
+            git_hash_release_string="${{git_parrent_a}}_${{git_parrent_b}}"
+          fi
+          echo "${{git_last_commit}}"
+          echo "${{git_hash_release_string}}"
+
           # build srpm package
           ssh root@${{build_server}} \
             "set -xe; \
@@ -114,6 +134,7 @@
             make gitversion ;\
             sed -i \"s/\(^Release:.*\)/\1.${{branch}}/\" {package_prefix}{package_name}.spec ;\
             sed -i \"s/\(^Release: *\)/\199/\" {package_prefix}{package_name}.spec ;\
+            sed -i \"s/${{git_last_commit}}/${{git_hash_release_string}}/\" {package_prefix}{package_name}.spec ;\
             make srpm ;\
             ls -l;"
 
