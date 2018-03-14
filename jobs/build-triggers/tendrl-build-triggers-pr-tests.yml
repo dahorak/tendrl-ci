@@ -84,10 +84,7 @@
           # Prepare env.sh file
           echo > ${{WORKSPACE}}/env.sh
           # use cop tendrl/tendrl (master) repo
-          echo "TENDRL_REPO_URL=http://copr-be.cloud.fedoraproject.org/results/tendrl/tendrl/epel-7-x86_64/" >> ${{WORKSPACE}}/env.sh
-          echo "TENDRL_REPO_GPGKEY_URL=https://copr-be.cloud.fedoraproject.org/results/tendrl/tendrl/pubkey.gpg" >> ${{WORKSPACE}}/env.sh
-          echo "TENDRL_DEPENDENCIES_REPO_URL=http://copr-be.cloud.fedoraproject.org/results/tendrl/dependencies/epel-7-x86_64/" >> ${{WORKSPACE}}/env.sh
-          echo "TENDRL_DEPENDENCIES_REPO_GPGKEY_URL=https://copr-be.cloud.fedoraproject.org/results/tendrl/dependencies/pubkey.gpg" >> ${{WORKSPACE}}/env.sh
+          echo "TENDRL_REPO=master" >> ${{WORKSPACE}}/env.sh
           # configure additional repos
           echo "ADDITIONAL_REPOS=${{ADDITIONAL_REPOS}}" >> ${{WORKSPACE}}/env.sh
           echo "ADDITIONAL_REPOS_USM_SERVER=${{ADDITIONAL_REPOS_USM_SERVER}}" >> ${{WORKSPACE}}/env.sh
