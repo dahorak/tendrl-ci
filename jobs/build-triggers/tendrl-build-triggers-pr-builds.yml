@@ -149,7 +149,7 @@
           # build RPM packages using mock
           ssh root@${{build_server}} \
             "set -xe; \
-            mock -r ${{mock_cfg}} rebuild \
+            mock -v -r ${{mock_cfg}} rebuild \
               ${{rwd}}/{package_name}/{package_prefix}{package_name}*.src.rpm"
 
           # prepare RPM repo
